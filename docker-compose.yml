@@ -4,17 +4,27 @@ services:
     depends_on:
       - db
     restart: always
-    ports:
-      - "8069:8069"
-      - "8072:8072"
+    
     environment:
       - HOST=db
       - USER=odoo
       - PASSWORD=odoo
+      - ODOO_MASTER_PASS=admin
+
     volumes:
       - odoo-web-data:/var/lib/odoo
-      - ./config:/etc/odoo
-      - ./addons:/mnt/extra-addons
+      - ../files/config:/etc/odoo
+      - ../files/addons:/mnt/extra-addons
+
+    networks:
+      - dokploy-network
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.odoo.rule=Host(`odoo.open-mercato.pl`)
+      - traefik.http.routers.odoo.entrypoints=websecure
+      - traefik.http.routers.odoo.tls.certresolver=letsencrypt
+      - traefik.http.services.odoo.loadbalancer.server.port=8069
+
   db:
     image: postgres:17
     environment:
@@ -24,6 +34,13 @@ services:
     restart: always
     volumes:
       - odoo-db-data:/var/lib/postgresql/data
+    networks:
+      - dokploy-network
+
 volumes:
   odoo-web-data:
   odoo-db-data:
+
+networks:
+  dokploy-network:
+    external: true
